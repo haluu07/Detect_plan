@@ -72,13 +72,21 @@ def main():
     parser.add_argument("--processed_dir", type=str, default="data/processed")
     parser.add_argument("--batch_size", type=int, default=64)
     parser.add_argument("--output_dir", type=str, default="reports")
+    parser.add_argument("--gpu_id", type=int, default=0, help="ID cua GPU can dung")
     args = parser.parse_args()
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if torch.cuda.is_available():
+        torch.cuda.set_device(args.gpu_id)
+        device = torch.device(f"cuda:{args.gpu_id}")
+        gpu_info = f"{device} ({torch.cuda.get_device_name(args.gpu_id)})"
+    else:
+        device = torch.device("cpu")
+        gpu_info = "CPU"
+
     print("\n" + "="*70)
     print(" ĐÁNH GIÁ TỔNG QUÁT HÓA MIỀN DỮ LIỆU (CROSS-DOMAIN EVALUATION)")
     print(f" Checkpoint: {args.checkpoint}")
-    print(f" Device: {device}")
+    print(f" Thiết bị: {gpu_info}")
     print("="*70)
 
     # 1. Doc classes.json

@@ -69,10 +69,16 @@ thay_HUY/
 
 ## 🛠️ 4. Hướng Dẫn Chạy Từ A-Z Trên Server Training (GPU)
 
-### Bước 1: Cài Đặt Môi Trường
+### Bước 1: Cài Đặt Môi Trường Hỗ Trợ GPU (CUDA)
+Để đảm bảo PyTorch nhận diện đúng card GPU NVIDIA trên server, anh chạy:
 ```bash
+# Cài PyTorch kèm CUDA 12.1 (hoặc cu118 tùy driver server):
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+
+# Cài các thư viện bổ trợ:
 pip install -r requirements.txt
 ```
+> **Lưu ý về Chế độ Ép GPU (`--force_gpu`)**: Code mặc định BẬT cờ `--force_gpu`. Nếu PyTorch không nhận thấy GPU CUDA, hệ thống sẽ **báo lỗi và dừng ngay** để tránh việc âm thầm chạy trên CPU làm chậm máy tính hàng giờ!
 
 ### Bước 2: Kéo Dữ Liệu Tự Động
 ```bash

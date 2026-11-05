@@ -119,7 +119,8 @@ def main():
                         help="Kien truc mo hinh")
     parser.add_argument("--epochs", type=int, default=15, 
                         help="So epoch huan luyen toi da (khuyen nghi: 15 cho Baseline, 20 cho ConvNeXt)")
-    parser.add_argument("--batch_size", type=int, default=64, help="Batch size")
+    parser.add_argument("--batch_size", type=int, default=32, 
+                        help="Batch size (mac dinh: 32, chi chiem ~3GB VRAM, phu hop voi GPU dang dung chung)")
     parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate khoi dau")
     parser.add_argument("--weight_decay", type=float, default=1e-2, help="Weight decay")
     parser.add_argument("--strong_aug", action="store_true", 
@@ -131,9 +132,45 @@ def main():
                         help="So epoch cho doi Early Stopping truoc khi dung (mac dinh: 4, dat 0 de tat)")
     parser.add_argument("--early_stop_metric", type=str, default="val_loss", choices=["val_loss", "val_acc"],
                         help="Metric theo doi cho Early Stopping: val_loss (khuyen dung) hoac val_acc")
+    parser.add_argument("--force_gpu", action="store_true", default=True,
+                        help="Ep buoc train bang GPU, bao loi va dung ngay neu khong co GPU CUDA (mac dinh: True)")
+    parser.add_argument("--no_force_gpu", dest="force_gpu", action="store_false",
+                        help="Cho phep chay bang CPU neu khong tim thay GPU")
+    parser.add_argument("--gpu_id", type=int, default=0,
+                        help="ID cua GPU can su dung tren server nhieu card (mac dinh: 0)")
     args = parser.parse_args()
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # Kiem tra va ep buoc su dung GPU CUDA
+    if not torch.cuda.is_available():
+        if args.force_gpu:
+            raise RuntimeError(
+                "\n" + "!"*75 + "\n"
+                "[LỖI: KHÔNG TÌM THẤY GPU CUDA!]\n"
+                "Chế độ ép buộc GPU (--force_gpu) đang BẬT để bảo vệ tiến trình huấn luyện.\n"
+                "Nếu chạy trên CPU, tập dữ liệu 54.000 ảnh sẽ mất nhiều ngày thay vì vài chục phút!\n\n"
+                "HÃY KIỂM TRA:\n"
+                " 1. Lệnh `nvidia-smi` trên server có hiển thị GPU NVIDIA không?\n"
+                " 2. Đã cài PyTorch hỗ trợ CUDA chưa? (Ví dụ: pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121)\n\n"
+                "(*) Nếu anh muốn chạy thử nghiệm tạm thời trên CPU, hãy thêm cờ: --no_force_gpu\n"
+                + "!"*75
+            )
+        else:
+            device = torch.device("cpu")
+            print("\n[CẢNH BÁO] Đang chạy trên CPU (tốc độ sẽ rất chậm!).")
+    else:
+        torch.cuda.set_device(args.gpu_id)
+        device = torch.device(f"cuda:{args.gpu_id}")
+        torch.backends.cudnn.benchmark = True # Toi uu toc do Conv2D
+        gpu_name = torch.cuda.get_device_name(args.gpu_id)
+        total_vram = torch.cuda.get_device_properties(args.gpu_id).total_memory / (1024**3)
+        print("\n" + "="*70)
+        print(f" [GPU ACCELERATION ĐÃ KÍCH HOẠT]")
+        print(f" * Thiết bị: GPU {args.gpu_id} - {gpu_name}")
+        print(f" * Dung lượng VRAM: {total_vram:.2f} GB")
+        print(f" * Chế độ cuDNN Benchmark: ĐÃ BẬT (Tối ưu thuật toán tích chập)")
+        print(f" * Chế độ Mixed Precision (AMP FP16): ĐÃ BẬT (Tăng tốc 2x - 3x)")
+        print("="*70)
+
     print("\n" + "="*70)
     print(f" HUẤN LUYỆN MÔ HÌNH: {args.model.upper()}")
     print(f" Thiết bị: {device} | Batch Size: {args.batch_size} | Epochs: {args.epochs}")

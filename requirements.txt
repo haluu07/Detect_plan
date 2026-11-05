@@ -1,6 +1,12 @@
+# ==============================================================================
+# LƯU Ý KHI CÀI PYTORCH CHO GPU (CUDA):
+# Để chắc chắn cài đúng PyTorch có CUDA, trên server hãy chạy lệnh:
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+# Sau đó cài các thư viện phụ thuộc còn lại:
+#   pip install -r requirements.txt
+# ==============================================================================
+
 # Core Deep Learning & Computer Vision
-torch>=2.0.0
-torchvision>=0.15.0
 timm>=0.9.12
 albumentations>=1.3.1
 opencv-python>=4.8.0

@@ -109,9 +109,15 @@ def main():
     parser.add_argument("--model", type=str, default="resnet50")
     parser.add_argument("--processed_dir", type=str, default="data/processed")
     parser.add_argument("--output_file", type=str, default="reports/gradcam_analysis.png")
+    parser.add_argument("--gpu_id", type=int, default=0, help="ID GPU")
     args = parser.parse_args()
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if torch.cuda.is_available():
+        torch.cuda.set_device(args.gpu_id)
+        device = torch.device(f"cuda:{args.gpu_id}")
+    else:
+        device = torch.device("cpu")
+
     
     # 1. Load Classes
     classes_json = Path(args.processed_dir) / "classes.json"
