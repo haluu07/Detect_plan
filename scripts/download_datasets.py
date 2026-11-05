@@ -46,7 +46,6 @@ def download_kaggle_dataset(dataset_slug: str, output_dir: Path, zip_name: str):
 def download_plantvillage(target_dir: Path):
     """
     PlantVillage: ~54.000 anh, 38 lop
-    Kaggle slug pho bien nhat: 'abdallahalidev/plantvillage-dataset' hoac 'emmarex/plantdisease'
     """
     pv_dir = target_dir / "plantvillage"
     if pv_dir.exists() and len(list(pv_dir.glob("*/*"))) > 1000:
@@ -56,25 +55,37 @@ def download_plantvillage(target_dir: Path):
     print("\n" + "="*60)
     print(" BẮT ĐẦU TẢI PLANTVILLAGE DATASET (~54.000 ảnh, 38 lớp)")
     print("="*60)
+    
+    # 1. Thu Kaggle API neu co token
     success = download_kaggle_dataset("abdallahalidev/plantvillage-dataset", pv_dir, "plantvillage.zip")
     
+    # 2. Neu Kaggle khong duoc, clone tu repo GitHub chinh chu cua spMohanty (depth=1)
     if not success:
+        print("[+] Thu clone repository PlantVillage tu GitHub (spMohanty/PlantVillage-Dataset)...")
+        git_target = target_dir / "PlantVillage_git"
+        ret = os.system(f"git clone --depth 1 https://github.com/spMohanty/PlantVillage-Dataset.git \"{git_target}\"")
+        if ret == 0:
+            color_dir = git_target / "raw" / "color"
+            if color_dir.exists():
+                ensure_dir(pv_dir)
+                for class_folder in color_dir.iterdir():
+                    if class_folder.is_dir():
+                        shutil.move(str(class_folder), str(pv_dir / class_folder.name))
+                print(f"[OK] Da chuyen anh tu repo GitHub vao {pv_dir}")
+                return
+
         print("\n" + "!"*60)
         print("HƯỚNG DẪN TẢI THỦ CÔNG PLANTVILLAGE:")
-        print("1. Truy cap: https://www.kaggle.com/datasets/abdallahalidev/plantvillage-dataset")
-        print("   hoac: https://data.mendeley.com/datasets/tywbtsjrjv/1")
-        print(f"2. Tai file zip ve va giai nen vao thu muc: {pv_dir.resolve()}")
-        print("   Cau truc thu muc can dat duoc:")
-        print(f"   {pv_dir.resolve()}/")
-        print("       ├── Apple___Apple_scab/")
-        print("       ├── Apple___Black_rot/")
-        print("       └── ... (38 thu muc con ung voi 38 lop)")
+        print("CÁCH 1 (Nhanh nhat tren Linux qua Git):")
+        print(f"  git clone --depth 1 https://github.com/spMohanty/PlantVillage-Dataset.git")
+        print(f"  mv PlantVillage-Dataset/raw/color/* \"{pv_dir.resolve()}/\"")
+        print("CÁCH 2: Tải zip từ Kaggle:")
+        print("  https://www.kaggle.com/datasets/abdallahalidev/plantvillage-dataset")
         print("!"*60 + "\n")
 
 def download_plantdoc(target_dir: Path):
     """
     PlantDoc: Anh thuc dia (in-the-wild), dung danh gia Cross-Domain Generalization
-    Kaggle slug: 'pratik2911/plantdoc-dataset' hoac clone tu repo GitHub
     """
     pd_dir = target_dir / "plantdoc"
     if pd_dir.exists() and len(list(pd_dir.glob("*/*"))) > 200:
@@ -85,31 +96,32 @@ def download_plantdoc(target_dir: Path):
     print(" BẮT ĐẦU TẢI PLANTDOC DATASET (Ảnh thực địa)")
     print("="*60)
     
-    # Cach 1: Kaggle dataset
-    success = download_kaggle_dataset("pratik2911/plantdoc-dataset", pd_dir, "plantdoc.zip")
+    # Cach 1: Clone truc tiep tu GitHub tac gia (pratikkayal/PlantDoc-Dataset) - KHONG CAN KAGGLE TOKEN!
+    print("[+] Dang clone PlantDoc tu GitHub chinh chu (pratikkayal/PlantDoc-Dataset)...")
+    github_url = "https://github.com/pratikkayal/PlantDoc-Dataset.git"
+    clone_target = target_dir / "PlantDoc_git"
     
-    # Cach 2: Neu Kaggle khong duoc, clone truc tiep tu GitHub repo chinh chu cua tac gia (Singhal et al.)
+    if clone_target.exists():
+        shutil.rmtree(clone_target, ignore_errors=True)
+        
+    ret = os.system(f"git clone --depth 1 {github_url} \"{clone_target}\"")
+    if ret == 0:
+        print(f"[OK] Da clone thanh cong repo PlantDoc vao {clone_target}")
+        ensure_dir(pd_dir)
+        for sub in ["train", "test"]:
+            src_sub = clone_target / sub
+            if src_sub.exists():
+                shutil.copytree(src_sub, pd_dir / sub, dirs_exist_ok=True)
+        print(f"[OK] Da sao chep du lieu PlantDoc vao {pd_dir}")
+        return
+        
+    # Cach 2: Kaggle dataset neu git gap loi
+    success = download_kaggle_dataset("pratik2911/plantdoc-dataset", pd_dir, "plantdoc.zip")
     if not success:
-        print("[+] Thu clone repository PlantDoc tu GitHub tac gia (pratik2911/PlantDoc-Dataset)...")
-        github_url = "https://github.com/pratik2911/PlantDoc-Dataset.git"
-        clone_target = target_dir / "PlantDoc_git"
-        ret = os.system(f"git clone --depth 1 {github_url} \"{clone_target}\"")
-        if ret == 0:
-            print(f"[OK] Da clone thanh cong repo PlantDoc vao {clone_target}")
-            # Tim thu muc anh train/test cua PlantDoc
-            ensure_dir(pd_dir)
-            for sub in ["train", "test"]:
-                src_sub = clone_target / sub
-                if src_sub.exists():
-                    shutil.copytree(src_sub, pd_dir / sub, dirs_exist_ok=True)
-            print(f"[OK] Da sao chep du lieu PlantDoc vao {pd_dir}")
-            return
-            
         print("\n" + "!"*60)
         print("HƯỚNG DẪN TẢI THỦ CÔNG PLANTDOC:")
-        print("1. Truy cap: https://www.kaggle.com/datasets/pratik2911/plantdoc-dataset")
-        print("   hoac GitHub: https://github.com/pratik2911/PlantDoc-Dataset")
-        print(f"2. Giai nen toan bo vao: {pd_dir.resolve()}")
+        print(f"  git clone --depth 1 https://github.com/pratikkayal/PlantDoc-Dataset.git")
+        print(f"  cp -r PlantDoc-Dataset/train PlantDoc-Dataset/test \"{pd_dir.resolve()}/\"")
         print("!"*60 + "\n")
 
 def main():

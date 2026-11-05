@@ -52,10 +52,10 @@ def extract_features(img_path: str, img_size=(128, 128)):
 
 def process_dataframe(df: pd.DataFrame, max_samples: int = None, desc="Extracting"):
     if max_samples and len(df) > max_samples:
-        # Stratified subsampling de tiet kiem thoi gian trich xuat neu can
-        df = df.groupby("label_idx", group_keys=False).apply(
-            lambda x: x.sample(min(len(x), max(1, int(max_samples / df["label_idx"].nunique()))), random_state=42)
-        )
+        # Stratified subsampling dung train_test_split de giu nguyen cac cot
+        from sklearn.model_selection import train_test_split
+        df, _ = train_test_split(df, train_size=max_samples, stratify=df["label_idx"], random_state=42)
+        df = df.reset_index(drop=True)
         
     features = []
     labels = []
@@ -63,7 +63,7 @@ def process_dataframe(df: pd.DataFrame, max_samples: int = None, desc="Extractin
     for _, row in tqdm(df.iterrows(), total=len(df), desc=desc):
         f = extract_features(row["image_path"])
         features.append(f)
-        labels.append(row["label_idx"])
+        labels.append(int(row["label_idx"]))
         
     return np.array(features), np.array(labels)
 

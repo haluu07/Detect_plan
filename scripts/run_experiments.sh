@@ -28,13 +28,16 @@ fi
 echo -e "\n[Buoc 1] Kiem tra va cai dat thu vien..."
 pip install -r requirements.txt
 
-# 2. Download du lieu
-echo -e "\n[Buoc 2] Tai du lieu PlantVillage va PlantDoc..."
-python scripts/download_datasets.py
+# 2. Download va tien xu ly (neu chua co)
+if [ ! -f "data/processed/plantvillage_train.csv" ]; then
+    echo -e "\n[Buoc 2] Tai du lieu PlantVillage va PlantDoc..."
+    python scripts/download_datasets.py
 
-# 3. Tien xu ly du lieu va tao Class Mapping
-echo -e "\n[Buoc 3] Tien xu ly du lieu & tao cross-domain label alignment..."
-python scripts/prepare_datasets.py
+    echo -e "\n[Buoc 3] Tien xu ly du lieu & tao cross-domain label alignment..."
+    python scripts/prepare_datasets.py
+else
+    echo -e "\n[+] Du lieu da duoc tien xu ly san trong data/processed/, bo qua buoc download va prepare."
+fi
 
 # 4. Chay Baseline 1: Traditional ML (HOG + SVM)
 echo -e "\n[Buoc 4] Chay Baseline 1: HOG + SVM..."

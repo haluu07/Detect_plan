@@ -79,6 +79,14 @@ def prepare_plantvillage(pv_root: Path, output_dir: Path, val_ratio=0.15, test_r
                     "domain": "PlantVillage"
                 })
                 
+    if len(records) == 0:
+        print("\n" + "!"*75)
+        print(f"[LỖI: KHÔNG TÌM THẤY ẢNH PLANTVILLAGE TRONG {pv_root}]")
+        print("Nguyên nhân: Bước tải dữ liệu trước đó bị lỗi nên thư mục data/plantvillage đang trống!")
+        print("Giải pháp: Hãy tải dữ liệu PlantVillage vào thư mục data/plantvillage trước khi chạy tiếp.")
+        print("!"*75 + "\n")
+        sys.exit(1)
+
     df = pd.DataFrame(records)
     print(f"[OK] Tim thay tong cong {len(df)} anh PlantVillage tren {len(classes)} lop.")
     
