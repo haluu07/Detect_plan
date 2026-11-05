@@ -164,7 +164,7 @@ def main():
         history["val_loss"].append(val_loss)
         history["val_acc"].append(val_acc)
 
-        print(f"Epoch [{epoch:02d}/{args.epochs:02d}] | Train Loss: {train_loss:.4f} - Train Acc: {train_acc:.2f}% | Field Val Acc: {val_acc:.2f}%")
+        print(f"Epoch [{epoch:02d}/{args.epochs:02d}] | Train Loss: {train_loss:.4f} - Train Acc: {train_acc:.2f}% | Field Val Acc: {val_acc:.2f}%", flush=True)
 
         if val_acc > best_acc:
             best_acc = val_acc
