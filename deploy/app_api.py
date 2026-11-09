@@ -3,11 +3,19 @@ API Backend su dung FastAPI de phuc vu cho Mobile App / Web App:
 - Nhan anh tu Camera dien thoai (Upload file multipart/form-data)
 - Model AI (ConvNeXt-Tiny Domain Adapted) chan doan benh
 - Tra ve ket qua JSON sach se gom: Ten cay, Ten benh tieng Viet & Anh, Do tu tin, va Huong dan dieu tri!
+- Tu dong tao Public HTTPS Link (Cloudflare Tunnel) de Expo Go va Web truy cap tu moi noi!
 """
 
 import io
 import json
 import os
+import re
+import stat
+import time
+import urllib.request
+import threading
+import subprocess
+import platform
 import argparse
 from pathlib import Path
 from contextlib import asynccontextmanager
@@ -153,10 +161,100 @@ async def predict_plant_disease(file: UploadFile = File(...)):
         "top3_candidates": top3
     }
 
+def start_tunnel(port: int):
+    """Tu dong tao public HTTPS link qua Cloudflare Tunnel de mobile app va web truy cap"""
+    system = platform.system().lower()
+    bin_dir = Path(__file__).resolve().parent
+    if system == "linux":
+        bin_path = bin_dir / "cloudflared"
+        url = "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64"
+    elif system == "windows":
+        bin_path = bin_dir / "cloudflared.exe"
+        url = "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe"
+    elif system == "darwin":
+        bin_path = bin_dir / "cloudflared"
+        url = "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-darwin-amd64"
+    else:
+        print("[Tunnel] Hệ điều hành không hỗ trợ tự tải cloudflared.")
+        return None
+
+    if not bin_path.exists():
+        print(f"[Tunnel] Đang tải công cụ Cloudflare Tunnel (~30MB) để tạo link HTTPS công khai...")
+        try:
+            urllib.request.urlretrieve(url, str(bin_path))
+            if system != "windows":
+                bin_path.chmod(bin_path.stat().st_mode | stat.S_IEXEC)
+            print("[Tunnel] Tải công cụ thành công!")
+        except Exception as e:
+            print(f"[Tunnel] Không thể tải cloudflared: {e}")
+            return None
+
+    cmd = [str(bin_path), "tunnel", "--url", f"http://127.0.0.1:{port}"]
+    try:
+        proc = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1
+        )
+        tunnel_url = None
+        start_time = time.time()
+        while time.time() - start_time < 35:
+            line = proc.stdout.readline()
+            if not line:
+                break
+            match = re.search(r"https://[a-zA-Z0-9-]+\.trycloudflare\.com", line)
+            if match:
+                tunnel_url = match.group(0)
+                break
+
+        if tunnel_url:
+            print("\n" + "="*70)
+            print("🚀 ĐÃ TẠO ĐƯỜNG LINK PUBLIC HTTPS THÀNH CÔNG CHO MOBILE APP & WEB:")
+            print(f"👉 Link Test Docs (Swagger UI): {tunnel_url}/docs")
+            print(f"👉 Link Gọi API cho Expo Go:   {tunnel_url}/predict")
+            print("="*70 + "\n", flush=True)
+
+            # Doc tiep output trong background de tranh tran buffer pipe
+            def drain_output():
+                try:
+                    for _ in proc.stdout:
+                        pass
+                except Exception:
+                    pass
+            threading.Thread(target=drain_output, daemon=True).start()
+            return proc
+        else:
+            print("[Tunnel] Chưa bắt được link sau 35s. Server nội bộ vẫn hoạt động bình thường.")
+            return proc
+    except Exception as e:
+        print(f"[Tunnel] Lỗi khi khởi động tunnel: {e}")
+        return None
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Plant Disease AI FastAPI Server")
     parser.add_argument("--host", type=str, default="0.0.0.0", help="Host address")
     parser.add_argument("--port", type=int, default=8008, help="Port to listen on (default 8008)")
+    parser.add_argument("--share", action="store_true", default=True, help="Tu dong tao link Public HTTPS (mac dinh: True)")
+    parser.add_argument("--no-share", dest="share", action="store_false", help="Tat tinh nang tao link Public")
     args = parser.parse_args()
 
-    uvicorn.run("app_api:app", host=args.host, port=args.port, reload=False)
+    tunnel_proc = None
+    if args.share:
+        # Chay tunnel trong background thread de khong block uvicorn
+        def run_tunnel():
+            global tunnel_proc
+            # Cho Uvicorn khoi dong khoang 1-2 giay
+            time.sleep(2)
+            tunnel_proc = start_tunnel(args.port)
+        threading.Thread(target=run_tunnel, daemon=True).start()
+
+    try:
+        uvicorn.run("app_api:app", host=args.host, port=args.port, reload=False)
+    finally:
+        if tunnel_proc:
+            try:
+                tunnel_proc.terminate()
+            except Exception:
+                pass
