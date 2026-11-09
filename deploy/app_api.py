@@ -23,6 +23,7 @@ from PIL import Image
 import torch
 import torch.nn.functional as F
 from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
@@ -30,6 +31,9 @@ import sys
 sys.path.append(str(Path(__file__).resolve().parent.parent / "src"))
 from models import get_model
 from dataset import get_test_transforms
+
+# Thu muc chua template frontend
+TEMPLATE_DIR = Path(__file__).resolve().parent / "templates"
 
 # Khoi tao bien toan cuc
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -95,7 +99,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
+def index():
+    html_path = TEMPLATE_DIR / "index.html"
+    if html_path.exists():
+        with open(html_path, "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    return HTMLResponse("<h2>AgriDoctor AI Pro - Frontend Template Not Found</h2>")
+
+@app.get("/health")
 def health_check():
     return {
         "status": "online",
@@ -210,11 +222,12 @@ def start_tunnel(port: int):
                 break
 
         if tunnel_url:
-            print("\n" + "="*70)
-            print("🚀 ĐÃ TẠO ĐƯỜNG LINK PUBLIC HTTPS THÀNH CÔNG CHO MOBILE APP & WEB:")
-            print(f"👉 Link Test Docs (Swagger UI): {tunnel_url}/docs")
-            print(f"👉 Link Gọi API cho Expo Go:   {tunnel_url}/predict")
-            print("="*70 + "\n", flush=True)
+            print("\n" + "="*75)
+            print("🌿 HỆ THỐNG AGRI-DOCTOR AI PRO ĐÃ SẴN SÀNG TRÊN INTERNET (4G / WIFI):")
+            print(f"👉 GIAO DIỆN WEB DEMO VIP PRO:  {tunnel_url}/")
+            print(f"👉 KẾT NỐI CHO APP EXPO GO:     {tunnel_url}/predict")
+            print(f"👉 TÀI LIỆU SWAGGER API DOCS:   {tunnel_url}/docs")
+            print("="*75 + "\n", flush=True)
 
             # Doc tiep output trong background de tranh tran buffer pipe
             def drain_output():

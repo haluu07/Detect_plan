@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="vi" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgriDoctor AI Pro - Hệ Thống Chẩn Đoán Bệnh Cây Trồng Thông Minh</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    },
+                    colors: {
+                        emerald: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                            900: '#064e3b',
+                        },
+                        agri: {
+                            dark: '#0f172a',
+                            card: '#1e293b',
+                            accent: '#10b981',
+                            glow: '#34d399'
+                        }
+                    },
+                    animation: {
+                        'scan': 'scan 2s linear infinite',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    keyframes: {
+                        scan: {
+                            '0%': { top: '0%' },
+                            '100%': { top: '100%' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Glassmorphism styling */
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .laser-line {
+            box-shadow: 0 0 15px 3px #10b981, 0 0 30px 6px #34d399;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #10b981;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-full font-sans antialiased selection:bg-emerald-500 selection:text-white">
+
+    <!-- Ambient Gradient Background -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none -z-10">
+        <div class="absolute -top-40 -left-40 w-96 h-96 bg-emerald-600/20 rounded-full blur-3xl"></div>
+        <div class="absolute top-1/3 -right-40 w-96 h-96 bg-teal-600/15 rounded-full blur-3xl"></div>
+        <div class="absolute -bottom-40 left-1/3 w-96 h-96 bg-cyan-600/15 rounded-full blur-3xl"></div>
+    </div>
+
+    <!-- Header Navbar -->
+    <header class="border-b border-slate-800/80 sticky top-0 z-40 glass-panel">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-500/30 ring-2 ring-emerald-400/20">
+                    <i class="fa-solid fa-seedling text-white text-2xl"></i>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-2xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400">
+                            AgriDoctor AI
+                        </span>
+                        <span class="px-2 py-0.5 text-xs font-semibold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 rounded-md border border-emerald-500/30">PRO</span>
+                    </div>
+                    <p class="text-xs text-slate-400 hidden sm:block">Hệ thống chẩn đoán bệnh lá cây thông minh qua ảnh thực địa</p>
+                </div>
+            </div>
+
+            <!-- Badges -->
+            <div class="flex items-center space-x-3">
+                <div class="hidden md:flex items-center space-x-2 px-3 py-1.5 rounded-full bg-slate-800/60 border border-slate-700/60 text-xs">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span class="text-slate-300">Model: <strong class="text-emerald-400">ConvNeXt + Domain Adaptation</strong></span>
+                </div>
+                <div class="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-300">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    <span class="font-medium">38 Lớp Bệnh</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Hero Intro Banner -->
+        <div class="text-center max-w-3xl mx-auto mb-10">
+            <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold mb-4">
+                <i class="fa-solid fa-sparkles"></i>
+                <span>Nghiên cứu khoa học: Khắc phục Domain Shift từ Lab sang Thực địa</span>
+            </div>
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mb-3">
+                Chẩn Đoán Bệnh Cây Trồng Tức Thì
+            </h1>
+            <p class="text-slate-400 text-sm sm:text-base leading-relaxed">
+                Tải ảnh hoặc chụp trực tiếp lá cây trên đồng ruộng. Thuật toán AI hiện đại sẽ tự động nhận diện mầm bệnh, đánh giá độ tin cậy và đề xuất phác đồ điều trị nông nghiệp chuẩn xác.
+            </p>
+        </div>
+
+        <!-- Two Columns Layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            <!-- Left Column: Image Input & Control (5 cols) -->
+            <div class="lg:col-span-5 space-y-6">
+                
+                <!-- Main Card -->
+                <div class="glass-panel rounded-3xl p-6 shadow-2xl relative overflow-hidden">
+                    
+                    <!-- Tabs Selection -->
+                    <div class="flex p-1 bg-slate-900/80 rounded-2xl border border-slate-800 mb-6">
+                        <button id="tab-upload" onclick="switchTab('upload')" class="flex-1 py-2.5 px-3 rounded-xl text-xs font-semibold transition-all duration-200 flex items-center justify-center space-x-2 bg-emerald-600 text-white shadow-lg">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                            <span>Tải ảnh lên</span>
+                        </button>
+                        <button id="tab-camera" onclick="switchTab('camera')" class="flex-1 py-2.5 px-3 rounded-xl text-xs font-semibold transition-all duration-200 flex items-center justify-center space-x-2 text-slate-400 hover:text-white">
+                            <i class="fa-solid fa-camera"></i>
+                            <span>Chụp trực tiếp</span>
+                        </button>
+                        <button id="tab-samples" onclick="switchTab('samples')" class="flex-1 py-2.5 px-3 rounded-xl text-xs font-semibold transition-all duration-200 flex items-center justify-center space-x-2 text-slate-400 hover:text-white">
+                            <i class="fa-solid fa-vial"></i>
+                            <span>Ảnh mẫu</span>
+                        </button>
+                    </div>
+
+                    <!-- TAB 1: UPLOAD ZONE -->
+                    <div id="panel-upload" class="space-y-4">
+                        <div id="dropzone" 
+                             ondragover="handleDragOver(event)" 
+                             ondragleave="handleDragLeave(event)" 
+                             ondrop="handleDrop(event)"
+                             onclick="document.getElementById('file-input').click()"
+                             class="border-2 border-dashed border-slate-700 hover:border-emerald-500/80 rounded-2xl p-8 text-center cursor-pointer transition-all duration-300 bg-slate-900/40 hover:bg-emerald-950/20 group">
+                            <input type="file" id="file-input" accept="image/*" class="hidden" onchange="handleFileSelect(event)">
+                            <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-800/80 flex items-center justify-center group-hover:scale-110 group-hover:bg-emerald-600/20 transition-all duration-300">
+                                <i class="fa-solid fa-cloud-arrow-up text-2xl text-slate-400 group-hover:text-emerald-400"></i>
+                            </div>
+                            <h3 class="text-sm font-semibold text-slate-200 mb-1 group-hover:text-emerald-300">
+                                Nhấn để chọn ảnh hoặc Kéo thả vào đây
+                            </h3>
+                            <p class="text-xs text-slate-400">Hỗ trợ JPG, PNG, WEBP (Tối đa 15MB)</p>
+                        </div>
+                    </div>
+
+                    <!-- TAB 2: LIVE CAMERA -->
+                    <div id="panel-camera" class="hidden space-y-4">
+                        <div class="relative rounded-2xl overflow-hidden bg-black aspect-square flex items-center justify-center border border-slate-800">
+                            <video id="webcam-video" autoplay playsinline class="w-full h-full object-cover"></video>
+                            <canvas id="webcam-canvas" class="hidden"></canvas>
+                            <div id="camera-loading" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 text-slate-400 text-xs space-y-2">
+                                <i class="fa-solid fa-circle-notch fa-spin text-2xl text-emerald-400"></i>
+                                <span>Đang mở Camera / Webcam...</span>
+                            </div>
+                        </div>
+                        <button onclick="capturePhoto()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-semibold text-sm transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg shadow-emerald-600/30">
+                            <i class="fa-solid fa-camera"></i>
+                            <span>Chụp ảnh này</span>
+                        </button>
+                    </div>
+
+                    <!-- TAB 3: SAMPLE PRESETS -->
+                    <div id="panel-samples" class="hidden space-y-3">
+                        <p class="text-xs text-slate-400">Chọn 1 trong các mẫu lá cây thực địa đã thu thập để kiểm thử nhanh:</p>
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <button onclick="loadSample('apple_scab')" class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-emerald-500/50 text-left transition-all group flex items-center space-x-3">
+                                <span class="text-2xl">🍎</span>
+                                <div class="overflow-hidden">
+                                    <div class="text-xs font-semibold text-slate-200 truncate group-hover:text-emerald-400">Lá Táo</div>
+                                    <div class="text-[10px] text-red-400 truncate">Vảy nấm (Scab)</div>
+                                </div>
+                            </button>
+                            <button onclick="loadSample('tomato_late_blight')" class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-emerald-500/50 text-left transition-all group flex items-center space-x-3">
+                                <span class="text-2xl">🍅</span>
+                                <div class="overflow-hidden">
+                                    <div class="text-xs font-semibold text-slate-200 truncate group-hover:text-emerald-400">Lá Cà Chua</div>
+                                    <div class="text-[10px] text-red-400 truncate">Mốc sương (Blight)</div>
+                                </div>
+                            </button>
+                            <button onclick="loadSample('corn_rust')" class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-emerald-500/50 text-left transition-all group flex items-center space-x-3">
+                                <span class="text-2xl">🌽</span>
+                                <div class="overflow-hidden">
+                                    <div class="text-xs font-semibold text-slate-200 truncate group-hover:text-emerald-400">Lá Ngô</div>
+                                    <div class="text-[10px] text-amber-400 truncate">Rỉ sắt (Rust)</div>
+                                </div>
+                            </button>
+                            <button onclick="loadSample('bell_pepper_healthy')" class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-emerald-500/50 text-left transition-all group flex items-center space-x-3">
+                                <span class="text-2xl">🫑</span>
+                                <div class="overflow-hidden">
+                                    <div class="text-xs font-semibold text-slate-200 truncate group-hover:text-emerald-400">Ớt Chuông</div>
+                                    <div class="text-[10px] text-emerald-400 truncate">Khỏe mạnh</div>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- IMAGE PREVIEW & SCANNING CONTAINER -->
+                    <div id="preview-wrapper" class="hidden mt-6 pt-6 border-t border-slate-800">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-medium text-slate-400 flex items-center space-x-1.5">
+                                <i class="fa-solid fa-eye text-emerald-400"></i>
+                                <span>Ảnh đã chọn</span>
+                            </span>
+                            <button onclick="resetImage()" class="text-xs text-rose-400 hover:text-rose-300 font-medium">
+                                <i class="fa-solid fa-rotate-left mr-1"></i>Đổi ảnh khác
+                            </button>
+                        </div>
+
+                        <!-- Preview Card with Scanning Effect -->
+                        <div class="relative rounded-2xl overflow-hidden aspect-video sm:aspect-square bg-slate-950 border border-slate-800 flex items-center justify-center">
+                            <img id="preview-image" src="" alt="Lá cây cần chẩn đoán" class="w-full h-full object-contain">
+                            
+                            <!-- Laser Scanning Ray (Appears during analysis) -->
+                            <div id="scanning-laser" class="hidden absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-emerald-400 to-transparent laser-line animate-scan pointer-events-none"></div>
+
+                            <!-- Processing Overlay -->
+                            <div id="processing-overlay" class="hidden absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center">
+                                <div class="relative w-16 h-16 mb-4">
+                                    <div class="absolute inset-0 rounded-full border-4 border-emerald-500/20 animate-ping"></div>
+                                    <div class="w-16 h-16 rounded-full border-4 border-emerald-400 border-t-transparent animate-spin flex items-center justify-center">
+                                        <i class="fa-solid fa-microchip text-emerald-400 text-xl"></i>
+                                    </div>
+                                </div>
+                                <h4 class="text-sm font-bold text-white mb-1">Mô hình AI đang phân tích...</h4>
+                                <p id="scan-step" class="text-xs text-emerald-400/90 font-mono">Đang trích xuất đặc trưng ConvNeXt Stage 1-4...</p>
+                            </div>
+                        </div>
+
+                        <!-- Diagnose Submit Button -->
+                        <button id="btn-diagnose" onclick="runDiagnosis()" class="w-full mt-4 py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-extrabold text-sm tracking-wide uppercase transition-all duration-300 shadow-xl shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-bolt text-base"></i>
+                            <span>Chẩn Đoán Bệnh Ngay</span>
+                        </button>
+                    </div>
+
+                </div>
+
+                <!-- Model Specs Information Widget -->
+                <div class="glass-panel rounded-2xl p-4 text-xs text-slate-400 space-y-2 border border-slate-800/60">
+                    <div class="flex items-center justify-between text-slate-300 font-semibold border-b border-slate-800/80 pb-2">
+                        <span class="flex items-center space-x-1.5">
+                            <i class="fa-solid fa-circle-info text-emerald-400"></i>
+                            <span>Thông số kỹ thuật AI</span>
+                        </span>
+                        <span class="text-emerald-400">GPU Accelerated</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 pt-1 text-[11px]">
+                        <div>Kiến trúc: <strong class="text-slate-200">ConvNeXt-Tiny</strong></div>
+                        <div>Tổng quát hóa: <strong class="text-slate-200">Domain Adaptation</strong></div>
+                        <div>Tốc độ suy luận: <strong class="text-emerald-400">&lt; 100ms</strong></div>
+                        <div>Độ phân giải: <strong class="text-slate-200">224 × 224 px</strong></div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Column: Diagnosis Results Display (7 cols) -->
+            <div class="lg:col-span-7">
+                
+                <!-- State 1: Placeholder when no prediction has been made yet -->
+                <div id="results-placeholder" class="glass-panel rounded-3xl p-12 text-center border border-slate-800 flex flex-col items-center justify-center min-h-[480px]">
+                    <div class="w-20 h-20 rounded-3xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-600 mb-5">
+                        <i class="fa-solid fa-clipboard-check text-3xl"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-200 mb-2">Chưa Có Kết Quả Chẩn Đoán</h3>
+                    <p class="text-slate-400 text-xs sm:text-sm max-w-md leading-relaxed">
+                        Hãy chọn hoặc chụp một bức ảnh lá cây ở cột bên trái và nhấn <strong class="text-emerald-400">"Chẩn Đoán Bệnh Ngay"</strong> để xem kết quả phân tích chi tiết.
+                    </p>
+                </div>
+
+                <!-- State 2: Active Results Display -->
+                <div id="results-container" class="hidden space-y-6">
+                    
+                    <!-- Main Diagnosis Status Card -->
+                    <div id="status-card" class="rounded-3xl p-6 sm:p-8 transition-all duration-500 shadow-2xl relative overflow-hidden">
+                        
+                        <!-- Top Header: Health Badge & Confidence -->
+                        <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
+                            <div id="health-badge" class="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full font-bold text-xs uppercase tracking-wider">
+                                <i id="health-icon" class="fa-solid fa-virus"></i>
+                                <span id="health-status-text">PHÁT HIỆN SÂU BỆNH</span>
+                            </div>
+                            <div class="flex items-center space-x-2 bg-slate-900/60 px-3.5 py-1.5 rounded-full border border-slate-800 text-xs">
+                                <span class="text-slate-400">Độ tin cậy:</span>
+                                <span id="confidence-score" class="font-extrabold text-emerald-400 text-sm">99.8%</span>
+                            </div>
+                        </div>
+
+                        <!-- Disease Name Title -->
+                        <h2 id="disease-name-vi" class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-1">
+                            Bệnh đốm vi khuẩn
+                        </h2>
+                        <p id="disease-code-raw" class="text-xs font-mono text-slate-400 mb-6">
+                            Pepper,_bell___Bacterial_spot
+                        </p>
+
+                        <!-- Confidence Bar -->
+                        <div class="space-y-1.5 mb-6">
+                            <div class="flex justify-between text-xs font-medium text-slate-300">
+                                <span>Chỉ số tự tin của mô hình AI</span>
+                                <span id="confidence-level-text" class="text-emerald-400 font-semibold">Cực kỳ chắc chắn</span>
+                            </div>
+                            <div class="w-full bg-slate-900/80 rounded-full h-3 overflow-hidden p-0.5 border border-slate-700/60">
+                                <div id="confidence-bar" class="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-1000" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Top 3 Probability Breakdown -->
+                        <div class="bg-slate-900/70 rounded-2xl p-4 border border-slate-800/80">
+                            <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-3 flex items-center space-x-1.5">
+                                <i class="fa-solid fa-chart-simple text-emerald-400"></i>
+                                <span>Top 3 Dự Đoán Cao Nhất (Probabilities)</span>
+                            </h4>
+                            <div id="top3-list" class="space-y-2.5">
+                                <!-- Populated dynamically by JS -->
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Medical & Agricultural Prescription Advisory Box -->
+                    <div class="glass-panel rounded-3xl p-6 sm:p-8 border border-emerald-500/30 relative overflow-hidden shadow-xl">
+                        <div class="flex items-start space-x-4">
+                            <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shrink-0 text-emerald-400 text-xl">
+                                <i class="fa-solid fa-notes-medical"></i>
+                            </div>
+                            <div class="space-y-2 flex-1">
+                                <div class="flex items-center justify-between">
+                                    <h3 class="text-base font-bold text-white">Phác Đồ Điều Trị & Lời Khuyên Nông Nghiệp</h3>
+                                    <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-medium">Chuyên gia nông nghiệp</span>
+                                </div>
+                                <p id="treatment-advice" class="text-sm text-slate-300 leading-relaxed">
+                                    Vui lòng chờ chẩn đoán...
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons Toolbar -->
+                    <div class="flex flex-wrap items-center justify-end gap-3 pt-2">
+                        <button onclick="window.print()" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-all flex items-center space-x-2 border border-slate-700">
+                            <i class="fa-solid fa-print"></i>
+                            <span>In phiếu chẩn đoán</span>
+                        </button>
+                        <button onclick="resetImage()" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-all shadow-lg shadow-emerald-600/20 flex items-center space-x-2">
+                            <i class="fa-solid fa-arrows-rotate"></i>
+                            <span>Chẩn đoán mẫu lá mới</span>
+                        </button>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-16 border-t border-slate-800/80 py-8 text-center text-xs text-slate-500">
+        <p class="mb-1 font-medium text-slate-400">
+            Hệ Thống Nhận Dạng Bệnh Cây Trồng & Đánh Giá Tổng Quát Hóa Thực Địa (Cross-Domain Generalization)
+        </p>
+        <p>Công nghệ: PyTorch ConvNeXt-Tiny • Domain Adaptation (DAN) • FastAPI Backend • Tailwind CSS</p>
+    </footer>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        let currentFile = null;
+        let webcamStream = null;
+
+        // TAB SWITCHER
+        function switchTab(tab) {
+            const tabs = ['upload', 'camera', 'samples'];
+            tabs.forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                const panel = document.getElementById(`panel-${t}`);
+                if (t === tab) {
+                    btn.className = 'flex-1 py-2.5 px-3 rounded-xl text-xs font-semibold transition-all duration-200 flex items-center justify-center space-x-2 bg-emerald-600 text-white shadow-lg';
+                    panel.classList.remove('hidden');
+                } else {
+                    btn.className = 'flex-1 py-2.5 px-3 rounded-xl text-xs font-semibold transition-all duration-200 flex items-center justify-center space-x-2 text-slate-400 hover:text-white';
+                    panel.classList.add('hidden');
+                }
+            });
+
+            if (tab === 'camera') {
+                startWebcam();
+            } else {
+                stopWebcam();
+            }
+        }
+
+        // DRAG & DROP HANDLERS
+        function handleDragOver(e) {
+            e.preventDefault();
+            document.getElementById('dropzone').classList.add('border-emerald-400', 'bg-emerald-950/30');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            document.getElementById('dropzone').classList.remove('border-emerald-400', 'bg-emerald-950/30');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            document.getElementById('dropzone').classList.remove('border-emerald-400', 'bg-emerald-950/30');
+            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                processFile(e.dataTransfer.files[0]);
+            }
+        }
+
+        function handleFileSelect(e) {
+            if (e.target.files && e.target.files[0]) {
+                processFile(e.target.files[0]);
+            }
+        }
+
+        function processFile(file) {
+            if (!file.type.startsWith('image/')) {
+                alert('Vui lòng chỉ chọn file hình ảnh (JPG, PNG, WEBP)!');
+                return;
+            }
+            currentFile = file;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('preview-image').src = e.target.result;
+                document.getElementById('preview-wrapper').classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // WEBCAM LOGIC
+        async function startWebcam() {
+            const video = document.getElementById('webcam-video');
+            const loading = document.getElementById('camera-loading');
+            loading.classList.remove('hidden');
+
+            try {
+                // Ưu tiên mở camera sau trên điện thoại thông minh (facingMode: environment)
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } }
+                });
+                webcamStream = stream;
+                video.srcObject = stream;
+                video.onloadedmetadata = () => {
+                    loading.classList.add('hidden');
+                };
+            } catch (err) {
+                console.error("Camera error:", err);
+                loading.innerHTML = `<span class="text-rose-400 p-4 text-center">Không thể mở Camera: ${err.message}. Hãy cho phép quyền truy cập Camera trong trình duyệt!</span>`;
+            }
+        }
+
+        function stopWebcam() {
+            if (webcamStream) {
+                webcamStream.getTracks().forEach(track => track.stop());
+                webcamStream = null;
+            }
+        }
+
+        function capturePhoto() {
+            const video = document.getElementById('webcam-video');
+            const canvas = document.getElementById('webcam-canvas');
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            canvas.toBlob((blob) => {
+                currentFile = new File([blob], "camera_capture.jpg", { type: "image/jpeg" });
+                document.getElementById('preview-image').src = canvas.toDataURL('image/jpeg');
+                document.getElementById('preview-wrapper').classList.remove('hidden');
+                stopWebcam();
+                switchTab('upload');
+            }, 'image/jpeg', 0.95);
+        }
+
+        // LOAD SAMPLE PRESETS (Realistic synthetic leaf canvases)
+        function loadSample(sampleType) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 400;
+            canvas.height = 400;
+            const ctx = canvas.getContext('2d');
+
+            // Draw artistic realistic leaf background
+            const grad = ctx.createRadialGradient(200, 200, 50, 200, 200, 250);
+            
+            if (sampleType === 'apple_scab') {
+                grad.addColorStop(0, '#4d7c0f');
+                grad.addColorStop(1, '#1e293b');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, 400, 400);
+                // Draw leaf shape
+                ctx.fillStyle = '#65a30d';
+                ctx.beginPath();
+                ctx.ellipse(200, 200, 130, 170, Math.PI / 6, 0, 2 * Math.PI);
+                ctx.fill();
+                // Scab lesions (brown/black spots)
+                ctx.fillStyle = '#3f2e18';
+                for(let i = 0; i < 25; i++) {
+                    ctx.beginPath();
+                    ctx.arc(140 + Math.random() * 120, 120 + Math.random() * 160, 5 + Math.random() * 12, 0, 2 * Math.PI);
+                    ctx.fill();
+                }
+            } else if (sampleType === 'tomato_late_blight') {
+                grad.addColorStop(0, '#15803d');
+                grad.addColorStop(1, '#0f172a');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, 400, 400);
+                // Draw tomato leaf lobes
+                ctx.fillStyle = '#22c55e';
+                ctx.beginPath();
+                ctx.ellipse(200, 200, 140, 160, 0, 0, 2 * Math.PI);
+                ctx.fill();
+                // Blight water-soaked patches
+                ctx.fillStyle = '#422006';
+                ctx.beginPath();
+                ctx.ellipse(180, 170, 60, 80, Math.PI / 4, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.fillStyle = '#f8fafc';
+                ctx.globalAlpha = 0.4;
+                ctx.beginPath();
+                ctx.arc(180, 170, 65, 0, 2 * Math.PI);
+                ctx.stroke();
+                ctx.globalAlpha = 1.0;
+            } else if (sampleType === 'corn_rust') {
+                grad.addColorStop(0, '#84cc16');
+                grad.addColorStop(1, '#0f172a');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, 400, 400);
+                // Elongated corn blade
+                ctx.fillStyle = '#65a30d';
+                ctx.beginPath();
+                ctx.ellipse(200, 200, 70, 180, Math.PI / 12, 0, 2 * Math.PI);
+                ctx.fill();
+                // Rust pustules (cinnamon brown)
+                ctx.fillStyle = '#b45309';
+                for(let i = 0; i < 40; i++) {
+                    ctx.beginPath();
+                    ctx.ellipse(170 + Math.random() * 60, 80 + Math.random() * 240, 4, 10, 0, 0, 2 * Math.PI);
+                    ctx.fill();
+                }
+            } else { // bell_pepper_healthy
+                grad.addColorStop(0, '#16a34a');
+                grad.addColorStop(1, '#0f172a');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, 400, 400);
+                // Clean shiny leaf
+                ctx.fillStyle = '#22c55e';
+                ctx.beginPath();
+                ctx.ellipse(200, 200, 120, 160, 0, 0, 2 * Math.PI);
+                ctx.fill();
+                // Central vein
+                ctx.strokeStyle = '#86efac';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(200, 360);
+                ctx.quadraticCurveTo(205, 200, 200, 50);
+                ctx.stroke();
+            }
+
+            canvas.toBlob((blob) => {
+                currentFile = new File([blob], `${sampleType}.jpg`, { type: "image/jpeg" });
+                document.getElementById('preview-image').src = canvas.toDataURL('image/jpeg');
+                document.getElementById('preview-wrapper').classList.remove('hidden');
+                // Auto trigger diagnosis for snappy demo feel!
+                runDiagnosis();
+            }, 'image/jpeg', 0.95);
+        }
+
+        // RESET IMAGE
+        function resetImage() {
+            currentFile = null;
+            document.getElementById('file-input').value = '';
+            document.getElementById('preview-wrapper').classList.add('hidden');
+            document.getElementById('results-placeholder').classList.remove('hidden');
+            document.getElementById('results-container').classList.add('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // RUN DIAGNOSIS (CALL API /predict)
+        async function runDiagnosis() {
+            if (!currentFile) {
+                alert('Vui lòng chọn hoặc chụp ảnh trước!');
+                return;
+            }
+
+            const laser = document.getElementById('scanning-laser');
+            const overlay = document.getElementById('processing-overlay');
+            const scanStep = document.getElementById('scan-step');
+            const btn = document.getElementById('btn-diagnose');
+
+            // UI Animation Start
+            laser.classList.remove('hidden');
+            overlay.classList.remove('hidden');
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+
+            const steps = [
+                'Trích xuất đặc trưng ConvNeXt Stage 1-4...',
+                'Khử nhiễu nền thực địa (Domain Invariant Features)...',
+                'Phân loại Top-K Softmax Probabilities...'
+            ];
+            let stepIdx = 0;
+            const stepInterval = setInterval(() => {
+                stepIdx = (stepIdx + 1) % steps.length;
+                scanStep.textContent = steps[stepIdx];
+            }, 600);
+
+            try {
+                const formData = new FormData();
+                formData.append('file', currentFile);
+
+                // Call relative backend endpoint
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json().catch(() => ({}));
+                    throw new Error(errData.detail || `Lỗi máy chủ (${response.status})`);
+                }
+
+                const result = await response.json();
+                renderResults(result);
+
+            } catch (err) {
+                console.error("Diagnosis error:", err);
+                alert('Không thể hoàn thành chẩn đoán: ' + err.message);
+            } finally {
+                clearInterval(stepInterval);
+                laser.classList.add('hidden');
+                overlay.classList.add('hidden');
+                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
+        // RENDER RESULTS TO DOM
+        function renderResults(data) {
+            const diag = data.diagnosis;
+            const top3 = data.top3_candidates || [];
+
+            document.getElementById('results-placeholder').classList.add('hidden');
+            const resultsCard = document.getElementById('results-container');
+            resultsCard.classList.remove('hidden');
+
+            const statusCard = document.getElementById('status-card');
+            const healthBadge = document.getElementById('health-badge');
+            const healthIcon = document.getElementById('health-icon');
+            const healthText = document.getElementById('health-status-text');
+
+            if (diag.is_healthy) {
+                // Healthy Styling (Emerald Gradient)
+                statusCard.className = 'rounded-3xl p-6 sm:p-8 bg-gradient-to-br from-emerald-950/80 via-slate-900 to-slate-900 border border-emerald-500/40 shadow-2xl relative overflow-hidden';
+                healthBadge.className = 'inline-flex items-center space-x-2 px-4 py-1.5 rounded-full font-bold text-xs uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+                healthIcon.className = 'fa-solid fa-leaf text-emerald-400';
+                healthText.textContent = 'LÁ CÂY KHỎE MẠNH';
+                
+                // Fire celebratory confetti!
+                confetti({
+                    particleCount: 80,
+                    spread: 60,
+                    origin: { y: 0.6 },
+                    colors: ['#10b981', '#34d399', '#6ee7b7']
+                });
+            } else {
+                // Diseased Styling (Amber/Rose Gradient)
+                statusCard.className = 'rounded-3xl p-6 sm:p-8 bg-gradient-to-br from-rose-950/60 via-slate-900 to-slate-900 border border-rose-500/40 shadow-2xl relative overflow-hidden';
+                healthBadge.className = 'inline-flex items-center space-x-2 px-4 py-1.5 rounded-full font-bold text-xs uppercase tracking-wider bg-rose-500/20 text-rose-300 border border-rose-500/40';
+                healthIcon.className = 'fa-solid fa-triangle-exclamation text-rose-400';
+                healthText.textContent = 'PHÁT HIỆN DẤU HIỆU BỆNH';
+            }
+
+            // Names & Confidences
+            document.getElementById('disease-name-vi').textContent = diag.disease_name_vi;
+            document.getElementById('disease-code-raw').textContent = `Mã nhãn: ${diag.disease_code}`;
+            document.getElementById('confidence-score').textContent = `${diag.confidence_percent}%`;
+
+            // Confidence Bar Level text
+            const confLevel = document.getElementById('confidence-level-text');
+            if (diag.confidence_percent >= 90) {
+                confLevel.textContent = 'Độ tin cậy: Rất cao (Độ chuẩn xác vượt trội)';
+                confLevel.className = 'text-emerald-400 font-semibold';
+            } else if (diag.confidence_percent >= 60) {
+                confLevel.textContent = 'Độ tin cậy: Tương đối khả quan';
+                confLevel.className = 'text-amber-400 font-semibold';
+            } else {
+                confLevel.textContent = 'Độ tin cậy: Cần chụp cận cảnh thêm';
+                confLevel.className = 'text-rose-400 font-semibold';
+            }
+
+            // Animate confidence progress bar
+            const confBar = document.getElementById('confidence-bar');
+            confBar.style.width = '0%';
+            setTimeout(() => {
+                confBar.style.width = `${Math.min(diag.confidence_percent, 100)}%`;
+            }, 50);
+
+            // Populate Top 3
+            const top3Container = document.getElementById('top3-list');
+            top3Container.innerHTML = '';
+            top3.forEach((cand, idx) => {
+                const percent = cand.confidence_percent;
+                const row = document.createElement('div');
+                row.className = 'space-y-1';
+                row.innerHTML = `
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-slate-300 truncate max-w-[240px]">
+                            <strong class="text-slate-400 mr-1.5">#${idx + 1}</strong>
+                            ${cand.disease_name_vi || cand.class_raw}
+                        </span>
+                        <span class="font-mono text-emerald-400 font-semibold">${percent}%</span>
+                    </div>
+                    <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                        <div class="bg-emerald-500 h-full rounded-full transition-all duration-700" style="width: ${percent}%"></div>
+                    </div>
+                `;
+                top3Container.appendChild(row);
+            });
+
+            // Treatment Advice
+            document.getElementById('treatment-advice').textContent = diag.treatment_recommendation;
+
+            // Scroll to results smoothly on mobile
+            if (window.innerWidth < 1024) {
+                resultsCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+    </script>
+</body>
+</html>
