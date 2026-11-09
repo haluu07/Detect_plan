@@ -8,7 +8,9 @@ API Backend su dung FastAPI de phuc vu cho Mobile App / Web App:
 import io
 import json
 import os
+import argparse
 from pathlib import Path
+from contextlib import asynccontextmanager
 from PIL import Image
 import torch
 import torch.nn.functional as F
@@ -21,20 +23,11 @@ sys.path.append(str(Path(__file__).resolve().parent.parent / "src"))
 from models import get_model
 from dataset import get_test_transforms
 
-app = FastAPI(
-    title="Plant Disease AI Diagnosis API",
-    description="API Chẩn Đoán Bệnh Cây Trồng Phục Vụ Ứng Dụng Nông Nghiệp Thông Minh",
-    version="1.0.0"
-)
-
-# Cho phep cac App Mobile / Web goi API khong bi chan CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Khoi tao bien toan cuc
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+CLASSES = []
+MODEL = None
+TRANSFORM = get_test_transforms(img_size=224)
 
 # Tu dien tra cuu y nghia benh va huong dan phong tru
 DISEASE_INFO = {
@@ -53,13 +46,6 @@ DISEASE_INFO = {
     "Tomato___healthy": {"vi_name": "Lá cà chua khỏe mạnh", "advice": "Cây đang phát triển rất tốt, duy trì kiểm tra định kỳ."}
 }
 
-# Khoi tao model toan cuc
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-CLASSES = []
-MODEL = None
-TRANSFORM = get_test_transforms(img_size=224)
-
-@app.on_event("startup")
 def load_ai_model():
     global MODEL, CLASSES
     base_dir = Path(__file__).resolve().parent.parent
@@ -68,7 +54,7 @@ def load_ai_model():
     with open(classes_path, "r", encoding="utf-8") as f:
         CLASSES = json.load(f)["classes"]
 
-    # Uu tien nạp model da Domain Adaptation
+    # Uu tien nap model da Domain Adaptation
     ckpt_path = base_dir / "checkpoints" / "convnext_domain_adaptation" / "best_adaptation_model.pth"
     if not ckpt_path.exists():
         ckpt_path = base_dir / "checkpoints" / "convnext_tiny_strongaug" / "best_indomain_model.pth"
@@ -79,6 +65,27 @@ def load_ai_model():
     MODEL.to(DEVICE)
     MODEL.eval()
     print(f"[API] Đã nạp thành công mô hình AI ({ckpt_path.name}) trên thiết bị {DEVICE}!")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    load_ai_model()
+    yield
+
+app = FastAPI(
+    title="Plant Disease AI Diagnosis API",
+    description="API Chẩn Đoán Bệnh Cây Trồng Phục Vụ Ứng Dụng Nông Nghiệp Thông Minh",
+    version="1.0.0",
+    lifespan=lifespan
+)
+
+# Cho phep cac App Mobile / Web goi API khong bi chan CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 def health_check():
@@ -147,4 +154,9 @@ async def predict_plant_disease(file: UploadFile = File(...)):
     }
 
 if __name__ == "__main__":
-    uvicorn.run("app_api:app", host="0.0.0.0", port=8000, reload=False)
+    parser = argparse.ArgumentParser(description="Plant Disease AI FastAPI Server")
+    parser.add_argument("--host", type=str, default="0.0.0.0", help="Host address")
+    parser.add_argument("--port", type=int, default=8008, help="Port to listen on (default 8008)")
+    args = parser.parse_args()
+
+    uvicorn.run("app_api:app", host=args.host, port=args.port, reload=False)
