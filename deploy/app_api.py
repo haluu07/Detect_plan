@@ -201,7 +201,7 @@ def start_tunnel(port: int):
             print(f"[Tunnel] Không thể tải cloudflared: {e}")
             return None
 
-    cmd = [str(bin_path), "tunnel", "--url", f"http://127.0.0.1:{port}"]
+    cmd = [str(bin_path), "tunnel", "--protocol", "http2", "--no-autoupdate", "--url", f"http://127.0.0.1:{port}"]
     try:
         proc = subprocess.Popen(
             cmd,
@@ -227,13 +227,16 @@ def start_tunnel(port: int):
             print(f"👉 GIAO DIỆN WEB DEMO VIP PRO:  {tunnel_url}/")
             print(f"👉 KẾT NỐI CHO APP EXPO GO:     {tunnel_url}/predict")
             print(f"👉 TÀI LIỆU SWAGGER API DOCS:   {tunnel_url}/docs")
+            print("="*75)
+            print("💡 Lưu ý: Khi vừa khởi tạo link, nếu thấy 'Error 1033', vui lòng đợi 5-10s rồi bấm F5!")
             print("="*75 + "\n", flush=True)
 
-            # Doc tiep output trong background de tranh tran buffer pipe
+            # Doc tiep output trong background de theo doi log
             def drain_output():
                 try:
-                    for _ in proc.stdout:
-                        pass
+                    for line in proc.stdout:
+                        if "ERR" in line:
+                            print(f"[Tunnel Error] {line.strip()}", flush=True)
                 except Exception:
                     pass
             threading.Thread(target=drain_output, daemon=True).start()
