@@ -126,7 +126,7 @@
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
         <!-- Hero Intro Banner -->
-        <div class="text-center max-w-3xl mx-auto mb-10">
+        <div class="text-center max-w-3xl mx-auto mb-8">
             <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold mb-4">
                 <i class="fa-solid fa-sparkles"></i>
                 <span>Nghiên cứu khoa học: Khắc phục Domain Shift từ Lab sang Thực địa</span>
@@ -134,9 +134,27 @@
             <h1 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mb-3">
                 Chẩn Đoán Bệnh Cây Trồng Tức Thì
             </h1>
-            <p class="text-slate-400 text-sm sm:text-base leading-relaxed">
+            <p class="text-slate-400 text-sm sm:text-base leading-relaxed mb-4">
                 Tải ảnh hoặc chụp trực tiếp lá cây trên đồng ruộng. Thuật toán AI hiện đại sẽ tự động nhận diện mầm bệnh, đánh giá độ tin cậy và đề xuất phác đồ điều trị nông nghiệp chuẩn xác.
             </p>
+
+            <!-- Supported Crops Notice Pill -->
+            <div class="inline-flex flex-wrap items-center justify-center gap-1.5 p-2 px-4 rounded-2xl bg-slate-900/90 border border-slate-800 text-xs text-slate-300 shadow-md">
+                <span class="text-emerald-400 font-bold mr-1"><i class="fa-solid fa-leaf mr-1"></i>14 Cây hỗ trợ:</span>
+                <span class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-200">🍅 Cà chua</span>
+                <span class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-200">🥔 Khoai tây</span>
+                <span class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-200">🌽 Ngô</span>
+                <span class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-200">🫑 Ớt chuông</span>
+                <span class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-200">🍎 Táo</span>
+                <span class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-200">🍇 Nho</span>
+                <span class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-200">🍓 Dâu tây</span>
+                <span class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-200">🍊 Cam</span>
+                <span class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-200">🍑 Đào</span>
+                <span class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-200">🍒 Anh đào</span>
+                <span class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-200">🫐 Việt quất</span>
+                <span class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-200">🎃 Bí ngô</span>
+                <span class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-200">🌿 Đậu nành</span>
+            </div>
         </div>
 
         <!-- Two Columns Layout -->
@@ -692,7 +710,13 @@
             const healthIcon = document.getElementById('health-icon');
             const healthText = document.getElementById('health-status-text');
 
-            if (diag.is_healthy) {
+            if (diag.is_ood) {
+                // Out-of-Distribution / Low Confidence Warning Styling (Amber/Orange)
+                statusCard.className = 'rounded-3xl p-6 sm:p-8 bg-gradient-to-br from-amber-950/70 via-slate-900 to-slate-900 border border-amber-500/50 shadow-2xl relative overflow-hidden';
+                healthBadge.className = 'inline-flex items-center space-x-2 px-4 py-1.5 rounded-full font-bold text-xs uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/50';
+                healthIcon.className = 'fa-solid fa-triangle-exclamation text-amber-400';
+                healthText.textContent = 'CẢNH BÁO: ĐỘ TIN CẬY THẤP (< 45%)';
+            } else if (diag.is_healthy) {
                 // Healthy Styling (Emerald Gradient)
                 statusCard.className = 'rounded-3xl p-6 sm:p-8 bg-gradient-to-br from-emerald-950/80 via-slate-900 to-slate-900 border border-emerald-500/40 shadow-2xl relative overflow-hidden';
                 healthBadge.className = 'inline-flex items-center space-x-2 px-4 py-1.5 rounded-full font-bold text-xs uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
@@ -710,7 +734,7 @@
                 // Diseased Styling (Amber/Rose Gradient)
                 statusCard.className = 'rounded-3xl p-6 sm:p-8 bg-gradient-to-br from-rose-950/60 via-slate-900 to-slate-900 border border-rose-500/40 shadow-2xl relative overflow-hidden';
                 healthBadge.className = 'inline-flex items-center space-x-2 px-4 py-1.5 rounded-full font-bold text-xs uppercase tracking-wider bg-rose-500/20 text-rose-300 border border-rose-500/40';
-                healthIcon.className = 'fa-solid fa-triangle-exclamation text-rose-400';
+                healthIcon.className = 'fa-solid fa-virus text-rose-400';
                 healthText.textContent = 'PHÁT HIỆN DẤU HIỆU BỆNH';
             }
 
@@ -721,7 +745,10 @@
 
             // Confidence Bar Level text
             const confLevel = document.getElementById('confidence-level-text');
-            if (diag.confidence_percent >= 90) {
+            if (diag.is_ood) {
+                confLevel.textContent = 'Độ tin cậy rất thấp (< 45%): Nghi vấn loại cây ngoài tập dữ liệu đề tài';
+                confLevel.className = 'text-amber-400 font-semibold';
+            } else if (diag.confidence_percent >= 90) {
                 confLevel.textContent = 'Độ tin cậy: Rất cao (Độ chuẩn xác vượt trội)';
                 confLevel.className = 'text-emerald-400 font-semibold';
             } else if (diag.confidence_percent >= 60) {

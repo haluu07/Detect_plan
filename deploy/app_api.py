@@ -41,20 +41,72 @@ CLASSES = []
 MODEL = None
 TRANSFORM = get_test_transforms(img_size=224)
 
-# Tu dien tra cuu y nghia benh va huong dan phong tru
+# Tu dien tra cuu toan dien 38 lop benh cay trong (PlantVillage & PlantDoc)
 DISEASE_INFO = {
-    "Apple___Apple_scab": {"vi_name": "Bệnh vảy táo", "advice": "Cắt tỉa lá bệnh, dọn sạch lá rụng và phun thuốc diệt nấm Captan hoặc Mancozeb."},
-    "Apple___Black_rot": {"vi_name": "Bệnh thối đen táo", "advice": "Loại bỏ cành khô và quả bị bệnh, phun thuốc bảo vệ thực vật gốc đồng."},
-    "Apple___Cedar_apple_rust": {"vi_name": "Bệnh rỉ sắt táo", "advice": "Cách ly khỏi cây bách xù xung quanh, phun thuốc phòng nấm Myclobutanil."},
-    "Apple___healthy": {"vi_name": "Lá táo khỏe mạnh", "advice": "Cây phát triển tốt, duy trì chế độ tưới nước và dinh dưỡng hợp lý."},
-    "Corn_(maize)___Common_rust_": {"vi_name": "Bệnh rỉ sắt ngô", "advice": "Phun thuốc trừ nấm chứa hoạt chất Azoxystrobin hoặc Pyraclostrobin."},
-    "Corn_(maize)___Northern_Leaf_Blight": {"vi_name": "Bệnh cháy lá ngô phía Bắc", "advice": "Luân canh cây trồng, cày vùi tàn dư sau thu hoạch."},
-    "Pepper,_bell___Bacterial_spot": {"vi_name": "Bệnh đốm vi khuẩn ớt chuông", "advice": "Hạn chế tưới phun mưa lên tán lá, phun thuốc gốc đồng phòng trừ."},
-    "Pepper,_bell___healthy": {"vi_name": "Lá ớt khỏe mạnh", "advice": "Cây sinh trưởng tốt, bổ sung kali và canxi định kỳ."},
-    "Potato___Early_blight": {"vi_name": "Bệnh đốm sớm khoai tây", "advice": "Duy trì độ ẩm đất hợp lý, phun thuốc trừ nấm chứa Chlorothalonil."},
-    "Potato___Late_blight": {"vi_name": "Bệnh mốc sương / sương mai khoai tây", "advice": "Cực kỳ nguy hiểm! Cắt bỏ phần nhiễm bệnh và phun Metalaxyl ngay lập tức."},
-    "Tomato___Early_blight": {"vi_name": "Bệnh đốm vòng cà chua", "advice": "Tỉa bỏ các lá già sát mặt đất, phun thuốc trừ nấm sinh học hoặc Mancozeb."},
-    "Tomato___Late_blight": {"vi_name": "Bệnh sương mai cà chua", "advice": "Cách ly luống bệnh, phun thuốc phòng trừ có hoạt chất Dimethomorph."},
+    # Táo (Apple)
+    "Apple___Apple_scab": {"vi_name": "Bệnh vảy táo (Apple Scab)", "advice": "Cắt tỉa cành thông thoáng, dọn sạch lá rụng dưới gốc và phun thuốc trừ nấm gốc Captan, Mancozeb hoặc Difenoconazole."},
+    "Apple___Black_rot": {"vi_name": "Bệnh thối đen táo (Black Rot)", "advice": "Cắt bỏ cành khô và quả bị bệnh, phun thuốc bảo vệ thực vật gốc đồng (Copper Hydroxide) hoặc Thiophanate-methyl."},
+    "Apple___Cedar_apple_rust": {"vi_name": "Bệnh rỉ sắt táo (Cedar Rust)", "advice": "Cách ly vườn táo khỏi cây bách xù xung quanh, phun thuốc phòng nấm Myclobutanil hoặc Tebuconazole."},
+    "Apple___healthy": {"vi_name": "Lá táo khỏe mạnh", "advice": "Cây sinh trưởng tốt. Duy trì chế độ tưới tiêu và bón phân định kỳ."},
+
+    # Việt quất (Blueberry)
+    "Blueberry___healthy": {"vi_name": "Lá việt quất khỏe mạnh", "advice": "Cây phát triển bình thường. Giữ đất chua nhẹ (pH 4.5 - 5.5) và đủ độ ẩm."},
+
+    # Anh đào (Cherry)
+    "Cherry_(including_sour)___Powdery_mildew": {"vi_name": "Bệnh phấn trắng anh đào", "advice": "Tỉa thưa tán lá cho thông thoáng, phun thuốc trừ nấm chứa lưu huỳnh hữu cơ hoặc Myclobutanil."},
+    "Cherry_(including_sour)___healthy": {"vi_name": "Lá anh đào khỏe mạnh", "advice": "Cây sinh trưởng tốt. Duy trì bón lót phân hữu cơ và thoát nước tốt."},
+
+    # Ngô / Bắp (Corn)
+    "Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot": {"vi_name": "Bệnh đốm xám lá ngô (Gray Leaf Spot)", "advice": "Luân canh cây trồng, cày vùi tàn dư rơm rạ sau thu hoạch và phun thuốc trừ nấm nhóm Triazole hoặc Strobilurin."},
+    "Corn_(maize)___Common_rust_": {"vi_name": "Bệnh rỉ sắt ngô (Common Rust)", "advice": "Phun thuốc trừ nấm Azoxystrobin hoặc Pyraclostrobin ngay khi phát hiện vết rỉ sắt đầu tiên."},
+    "Corn_(maize)___Northern_Leaf_Blight": {"vi_name": "Bệnh cháy lá ngô phía Bắc", "advice": "Sử dụng giống kháng bệnh, thu dọn tàn dư vụ trước và phun Mancozeb khi bệnh chớm xuất hiện."},
+    "Corn_(maize)___healthy": {"vi_name": "Lá ngô khỏe mạnh", "advice": "Cây phát triển xanh tốt, cung cấp đủ đạm và nước trong giai đoạn trổ cờ."},
+
+    # Nho (Grape)
+    "Grape___Black_rot": {"vi_name": "Bệnh thối đen nho (Black Rot)", "advice": "Cắt tỉa chùm quả và lá bệnh, phun phòng ngừa bằng Mancozeb hoặc Ziram từ đầu mùa xuân."},
+    "Grape___Esca_(Black_Measles)": {"vi_name": "Bệnh sởi đen nho (Esca)", "advice": "Khử trùng dụng cụ cắt tỉa, quét vôi hoặc keo liền sẹo vào vết cắt để ngăn nấm xâm nhập vào thân gỗ."},
+    "Grape___Leaf_blight_(Isariopsis_Leaf_Spot)": {"vi_name": "Bệnh cháy lá nho (Isariopsis)", "advice": "Thu dọn lá rụng, phun thuốc bảo vệ thực vật gốc đồng hoặc Chlorothalonil định kỳ."},
+    "Grape___healthy": {"vi_name": "Lá nho khỏe mạnh", "advice": "Cây sinh trưởng tốt, duy trì kiểm tra sâu bọ trĩ và nấm mốc định kỳ."},
+
+    # Cam (Orange)
+    "Orange___Haunglongbing_(Citrus_greening)": {"vi_name": "Bệnh vàng lá gân xanh (Citrus Greening / HLB)", "advice": "Cực kỳ nguy hiểm! Tiêu hủy rầy chổng cánh (vật trung gian), chặt bỏ cây bị bệnh nặng để tránh lây lan cả vườn."},
+
+    # Đào (Peach)
+    "Peach___Bacterial_spot": {"vi_name": "Bệnh đốm vi khuẩn trên đào", "advice": "Phun oxytetracycline hoặc thuốc diệt khuẩn gốc đồng liều lượng nhẹ trong mùa mưa ẩm."},
+    "Peach___healthy": {"vi_name": "Lá đào khỏe mạnh", "advice": "Cây phát triển tốt, duy trì tỉa cành đón ánh sáng mặt trời."},
+
+    # Ớt chuông (Pepper bell)
+    "Pepper,_bell___Bacterial_spot": {"vi_name": "Bệnh đốm vi khuẩn ớt chuông", "advice": "Tránh tưới nước lên lá vào chiều tối, phun thuốc diệt khuẩn gốc đồng kết hợp Mancozeb."},
+    "Pepper,_bell___healthy": {"vi_name": "Lá ớt chuông khỏe mạnh", "advice": "Cây sinh trưởng tốt, bổ sung phân kali và canxi định kỳ."},
+
+    # Khoai tây (Potato)
+    "Potato___Early_blight": {"vi_name": "Bệnh đốm sớm khoai tây", "advice": "Tránh tưới quá nhiều ẩm, luân canh với cây họ đậu và phun Chlorothalonil hoặc Mancozeb."},
+    "Potato___Late_blight": {"vi_name": "Bệnh mốc sương khoai tây (Late Blight)", "advice": "Bệnh lây lan rất nhanh! Cắt bỏ lá bệnh và phun Metalaxyl, Dimethomorph hoặc Cymoxanil ngay."},
+    "Potato___healthy": {"vi_name": "Lá khoai tây khỏe mạnh", "advice": "Cây phát triển tốt, vun gốc định kỳ để bảo vệ củ non."},
+
+    # Mâm xôi (Raspberry)
+    "Raspberry___healthy": {"vi_name": "Lá mâm xôi khỏe mạnh", "advice": "Cây sinh trưởng tốt, đảm bảo giàn đỡ và đất thoát nước tốt."},
+
+    # Đậu nành (Soybean)
+    "Soybean___healthy": {"vi_name": "Lá đậu nành khỏe mạnh", "advice": "Cây phát triển bình thường, giữ cỏ dại sạch sẽ để tránh cạnh tranh dinh dưỡng."},
+
+    # Bí ngô (Squash)
+    "Squash___Powdery_mildew": {"vi_name": "Bệnh phấn trắng bí ngô", "advice": "Tưới nước sát gốc (tránh ướt lá), phun dung dịch baking soda sinh học hoặc thuốc trừ nấm gốc lưu huỳnh."},
+
+    # Dâu tây (Strawberry)
+    "Strawberry___Leaf_scorch": {"vi_name": "Bệnh cháy xém lá dâu tây", "advice": "Tỉa bỏ lá già úa sát luống, giữ bề mặt luống phủ màng nilon khô ráo và phun Captan."},
+    "Strawberry___healthy": {"vi_name": "Lá dâu tây khỏe mạnh", "advice": "Cây đang phát triển rất tốt, duy trì độ ẩm vừa phải cho gốc rễ."},
+
+    # Cà chua (Tomato)
+    "Tomato___Bacterial_spot": {"vi_name": "Bệnh đốm vi khuẩn cà chua", "advice": "Khử trùng hạt giống, cách ly cây bệnh và phun thuốc bảo vệ thực vật gốc đồng."},
+    "Tomato___Early_blight": {"vi_name": "Bệnh đốm vòng cà chua (Early Blight)", "advice": "Tỉa bỏ lá già sát mặt đất, phun thuốc trừ nấm sinh học hoặc Mancozeb, Chlorothalonil."},
+    "Tomato___Late_blight": {"vi_name": "Bệnh mốc sương cà chua (Late Blight)", "advice": "Cực kỳ nguy hiểm! Phun thuốc đặc trị có hoạt chất Metalaxyl hoặc Dimethomorph ngay lập tức."},
+    "Tomato___Leaf_Mold": {"vi_name": "Bệnh nấm mốc lá cà chua", "advice": "Giảm độ ẩm trong nhà lưới, thông gió tối đa và phun thuốc Difenoconazole."},
+    "Tomato___Septoria_leaf_spot": {"vi_name": "Bệnh đốm lá Septoria cà chua", "advice": "Dọn dẹp lá rụng, tưới nước vào buổi sáng và phun thuốc trừ nấm chứa Chlorothalonil."},
+    "Tomato___Spider_mites Two-spotted_spider_mite": {"vi_name": "Bệnh nhện đỏ hai đốm cà chua", "advice": "Tăng cường độ ẩm không khí, phun dầu khoáng hoặc thuốc trừ sâu sinh học Abamectin."},
+    "Tomato___Target_Spot": {"vi_name": "Bệnh đốm hồng tâm / đốm đích cà chua", "advice": "Tỉa bớt cành nhánh cho thông gió, phun thuốc diệt nấm Azoxystrobin."},
+    "Tomato___Tomato_Yellow_Leaf_Curl_Virus": {"vi_name": "Bệnh xoăn vàng lá cà chua (TYLCV)", "advice": "Do bọ phấn trắng truyền bệnh. Cần bẫy dính màu vàng diệt bọ phấn và nhổ bỏ cây bệnh nặng để bảo vệ ruộng."},
+    "Tomato___Tomato_mosaic_virus": {"vi_name": "Bệnh khảm lá cà chua (Mosaic Virus)", "advice": "Khử trùng tay và dụng cụ khi tỉa cây, nhổ bỏ cây bệnh để tránh lây lan qua nhựa cây."},
     "Tomato___healthy": {"vi_name": "Lá cà chua khỏe mạnh", "advice": "Cây đang phát triển rất tốt, duy trì kiểm tra định kỳ."}
 }
 
@@ -142,11 +194,29 @@ async def predict_plant_disease(file: UploadFile = File(...)):
     top1_class = CLASSES[top_idx[0].item()]
     top1_conf = round(top_prob[0].item() * 100, 2)
 
+    # Kiem tra Out-Of-Distribution (OOD): Neu do tu tin < 45%, la cay rat co the khong thuoc 14 loai cay cua de tai
+    is_ood = top1_conf < 45.0
+    is_healthy = ("healthy" in top1_class.lower()) and (not is_ood)
+
     # Tra cuu thong tin benh
     info = DISEASE_INFO.get(top1_class, {
         "vi_name": top1_class.replace("___", " - ").replace("_", " "),
         "advice": "Hãy duy trì chăm sóc cây trồng và tham khảo ý kiến kỹ sư nông nghiệp địa phương nếu vết bệnh lan rộng."
     })
+
+    if is_ood:
+        status_text = "CẢNH BÁO: ĐỘ TIN CẬY THẤP (< 45%)"
+        vi_name_display = f"{info['vi_name']} (Không chắc chắn)"
+        treatment_advice = (
+            f"⚠️ Độ tin cậy của AI chỉ đạt {top1_conf}%. "
+            "Khả năng cao loại lá cây này (ví dụ: Cây Chuối, Cây Dừa, Cây Cảnh, Mía...) "
+            "KHÔNG NẰM TRONG 14 LOẠI CÂY đề tài đã nghiên cứu (Táo, Cà chua, Khoai tây, Ngô, Ớt chuông, Nho, Dâu tây, Cam, Đào, Anh đào...). "
+            "Vui lòng thử chụp một trong 14 loại cây trồng được đề tài hỗ trợ hoặc chụp cận cảnh rõ phiến lá hơn!"
+        )
+    else:
+        status_text = "LÁ CÂY KHỎE MẠNH" if is_healthy else "PHÁT HIỆN SÂU BỆNH"
+        vi_name_display = info["vi_name"]
+        treatment_advice = info["advice"]
 
     # Danh sach Top 3
     top3 = []
@@ -158,17 +228,16 @@ async def predict_plant_disease(file: UploadFile = File(...)):
             "confidence_percent": round(p.item() * 100, 2)
         })
 
-    is_healthy = "healthy" in top1_class.lower()
-
     return {
         "success": True,
         "diagnosis": {
             "disease_code": top1_class,
-            "disease_name_vi": info["vi_name"],
+            "disease_name_vi": vi_name_display,
             "confidence_percent": top1_conf,
             "is_healthy": is_healthy,
-            "status": "Khỏe mạnh" if is_healthy else "Phát hiện sâu bệnh",
-            "treatment_recommendation": info["advice"]
+            "is_ood": is_ood,
+            "status": status_text,
+            "treatment_recommendation": treatment_advice
         },
         "top3_candidates": top3
     }
@@ -201,6 +270,7 @@ def start_tunnel(port: int):
             print(f"[Tunnel] Không thể tải cloudflared: {e}")
             return None
 
+    # Su dung protocol http2 (TCP port 443) de tranh bi tuong lua/nha mang chan UDP/QUIC (gay ra Error 1033)
     cmd = [str(bin_path), "tunnel", "--protocol", "http2", "--no-autoupdate", "--url", f"http://127.0.0.1:{port}"]
     try:
         proc = subprocess.Popen(
