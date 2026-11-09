@@ -4,6 +4,7 @@ API Backend su dung FastAPI de phuc vu cho Mobile App / Web App:
 - Model AI (ConvNeXt-Tiny Domain Adapted) chan doan benh
 - Tra ve ket qua JSON sach se gom: Ten cay, Ten benh tieng Viet & Anh, Do tu tin, va Huong dan dieu tri!
 - Tu dong tao Public HTTPS Link (Cloudflare Tunnel) de Expo Go va Web truy cap tu moi noi!
+- Co che tong hop xac suat benh hoc (Binary Disease Aggregation) tranh loi nhan dinh "Khoe manh" tren la co dom!
 """
 
 import io
@@ -189,34 +190,68 @@ async def predict_plant_disease(file: UploadFile = File(...)):
         logits = MODEL(input_tensor)
         probs = F.softmax(logits, dim=1)[0]
 
-    top_prob, top_idx = torch.topk(probs, k=3)
+    # Phan tich tong hop Benh vs Khoe Manh (Binary Disease Aggregation)
+    healthy_indices = [i for i, c in enumerate(CLASSES) if "healthy" in c.lower()]
+    disease_indices = [i for i, c in enumerate(CLASSES) if "healthy" not in c.lower()]
     
-    top1_class = CLASSES[top_idx[0].item()]
-    top1_conf = round(top_prob[0].item() * 100, 2)
+    prob_healthy_total = float(probs[healthy_indices].sum().item())
+    prob_disease_total = float(probs[disease_indices].sum().item())
 
-    # Kiem tra Out-Of-Distribution (OOD): Neu do tu tin < 45%, la cay rat co the khong thuoc 14 loai cay cua de tai
-    is_ood = top1_conf < 45.0
-    is_healthy = ("healthy" in top1_class.lower()) and (not is_ood)
+    # Tim benh co xac suat cao nhat trong tap cac lop benh
+    disease_probs = probs[disease_indices]
+    best_disease_sub_idx = torch.argmax(disease_probs).item()
+    best_disease_orig_idx = disease_indices[best_disease_sub_idx]
+    best_disease_class = CLASSES[best_disease_orig_idx]
+    best_disease_conf = round(probs[best_disease_orig_idx].item() * 100, 2)
 
-    # Tra cuu thong tin benh
-    info = DISEASE_INFO.get(top1_class, {
-        "vi_name": top1_class.replace("___", " - ").replace("_", " "),
-        "advice": "Hãy duy trì chăm sóc cây trồng và tham khảo ý kiến kỹ sư nông nghiệp địa phương nếu vết bệnh lan rộng."
-    })
+    top_prob, top_idx = torch.topk(probs, k=3)
+    raw_top1_class = CLASSES[top_idx[0].item()]
+    raw_top1_conf = round(top_prob[0].item() * 100, 2)
 
-    if is_ood:
-        status_text = "CẢNH BÁO: ĐỘ TIN CẬY THẤP (< 45%)"
-        vi_name_display = f"{info['vi_name']} (Không chắc chắn)"
+    # LOGIC CHẨN ĐOÁN THÔNG MINH (Tránh kết luận lá có đốm nấm là "Khỏe mạnh")
+    # Neu tong xac suat mang mam benh >= 35%, TUYET DOI khong the ket luan la la khoe manh!
+    is_diseased_overall = prob_disease_total >= 0.35
+
+    if is_diseased_overall and ("healthy" in raw_top1_class.lower()):
+        # Xay ra hien tuong: Xac suat benh bi phan tan cho nhieu lop benh (Thoi den, Dom la...)
+        # nen 1 lop healthy don le chiem 45%, nhung tong cac benh lai chiem > 55%!
+        chosen_class = best_disease_class
+        chosen_conf = round(prob_disease_total * 100, 2)
+        is_healthy = False
+        is_ood = raw_top1_conf < 50.0
+        
+        disease_info_obj = DISEASE_INFO.get(chosen_class, {"vi_name": chosen_class, "advice": "Cắt tỉa lá bệnh và phun thuốc trừ nấm."})
+        status_text = "PHÁT HIỆN DẤU HIỆU BỆNH (ĐỐM LÁ / NẤM HOẠI TỬ)"
+        vi_name_display = f"{disease_info_obj['vi_name']}"
         treatment_advice = (
-            f"⚠️ Độ tin cậy của AI chỉ đạt {top1_conf}%. "
-            "Khả năng cao loại lá cây này (ví dụ: Cây Chuối, Cây Dừa, Cây Cảnh, Mía...) "
-            "KHÔNG NẰM TRONG 14 LOẠI CÂY đề tài đã nghiên cứu (Táo, Cà chua, Khoai tây, Ngô, Ớt chuông, Nho, Dâu tây, Cam, Đào, Anh đào...). "
-            "Vui lòng thử chụp một trong 14 loại cây trồng được đề tài hỗ trợ hoặc chụp cận cảnh rõ phiến lá hơn!"
+            f"⚠️ Mô hình phát hiện phiến lá có các vết đốm hoại tử / nấm bệnh rất rõ rệt (Tổng xác suất mầm bệnh: {chosen_conf}%). "
+            f"Triệu chứng biểu hiện gần nhất với nhóm: {disease_info_obj['vi_name']}. "
+            "Nếu đây là loại cây ngoài danh mục 14 cây của đề tài (ví dụ: Dâu tằm, Cây cảnh...), các vết đốm này thường là bệnh Đốm lá nấm (Cercospora/Septoria) hoặc Thán thư. "
+            "Biện pháp: Cắt tỉa tiêu hủy lá bệnh, hạn chế đọng nước qua đêm và phun thuốc trừ nấm phổ rộng (Mancozeb, Ridomil Gold hoặc thuốc gốc đồng)."
         )
     else:
-        status_text = "LÁ CÂY KHỎE MẠNH" if is_healthy else "PHÁT HIỆN SÂU BỆNH"
-        vi_name_display = info["vi_name"]
-        treatment_advice = info["advice"]
+        chosen_class = raw_top1_class
+        chosen_conf = raw_top1_conf
+        is_ood = chosen_conf < 45.0
+        is_healthy = ("healthy" in chosen_class.lower()) and (prob_healthy_total >= 0.65) and (not is_ood)
+
+        info = DISEASE_INFO.get(chosen_class, {
+            "vi_name": chosen_class.replace("___", " - ").replace("_", " "),
+            "advice": "Hãy duy trì chăm sóc cây trồng và tham khảo ý kiến kỹ sư nông nghiệp địa phương nếu vết bệnh lan rộng."
+        })
+
+        if is_ood:
+            status_text = "CẢNH BÁO: ĐỘ TIN CẬY THẤP (< 45%)"
+            vi_name_display = f"{info['vi_name']} (Không chắc chắn)"
+            treatment_advice = (
+                f"⚠️ Độ tin cậy của AI chỉ đạt {chosen_conf}%. "
+                "Khả năng cao loại lá cây này KHÔNG NẰM TRONG 14 LOẠI CÂY đề tài đã nghiên cứu (Táo, Cà chua, Khoai tây, Ngô, Ớt chuông, Nho, Dâu tây...). "
+                "Vui lòng thử chụp một trong 14 loại cây trồng được đề tài hỗ trợ hoặc chụp cận cảnh rõ phiến lá hơn!"
+            )
+        else:
+            status_text = "LÁ CÂY KHỎE MẠNH" if is_healthy else "PHÁT HIỆN SÂU BỆNH"
+            vi_name_display = info["vi_name"]
+            treatment_advice = info["advice"]
 
     # Danh sach Top 3
     top3 = []
@@ -231,9 +266,9 @@ async def predict_plant_disease(file: UploadFile = File(...)):
     return {
         "success": True,
         "diagnosis": {
-            "disease_code": top1_class,
+            "disease_code": chosen_class,
             "disease_name_vi": vi_name_display,
-            "confidence_percent": top1_conf,
+            "confidence_percent": chosen_conf,
             "is_healthy": is_healthy,
             "is_ood": is_ood,
             "status": status_text,
